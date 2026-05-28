@@ -139,52 +139,60 @@ function playDeath() {
   setTimeout(function(){ playTone(100, 'sawtooth', 0.2, 0.2); }, 200);
 }
 
-// Chiptune BGM — 96 notes, two voices, stays same speed throughout
+// Chiptune BGM — catchy A-minor fantasy tune, 128 notes, ~25 seconds before loop
 var bgmPlaying = false;
 var bgmInterval = null;
 var bgmIdx = 0;
-var bgmTempo = 130; // fixed, never changes
 
-// Main melody — 96 notes (3 distinct phrases of 32 notes each)
+// Frequencies used: A3=220 B3=247 C4=262 D4=294 E4=330 F4=349 G4=392
+//                   A4=440 B4=494 C5=523 D5=587 E5=659 G5=784
+// Melody: 4 distinct 32-note phrases (AABA structure — verse, verse, bridge, verse)
 var bgmMelody = [
-  // Phrase A — playful cave adventure
-  330,0,392,0, 440,392,330,0, 294,330,370,0, 330,0,294,0,
-  392,0,440,0, 494,440,392,0, 330,294,330,0, 370,0,330,0,
-  // Phrase B — darker mysterious feel
-  262,0,294,0, 330,311,294,0, 262,0,247,0, 262,294,330,0,
-  311,0,330,0, 294,262,247,0, 220,0,247,0, 262,0,0,0,
-  // Phrase C — triumphant build
-  392,0,440,0, 494,523,494,0, 440,0,392,0, 440,494,523,0,
-  494,0,440,0, 392,330,294,0, 330,0,370,0, 392,0,0,0
+  // Phrase A — main cave theme (bouncy, memorable)
+  330,330,392,440, 392,330,294,330, 262,262,294,330, 294,262,247,262,
+  330,294,330,392, 440,494,440,392, 330,392,330,294, 262,0,262,0,
+  // Phrase A repeat with variation
+  330,330,392,440, 392,330,294,330, 262,294,330,349, 330,294,262,0,
+  392,440,494,523, 494,440,392,330, 294,330,392,440, 392,0,330,0,
+  // Phrase B — darker bridge
+  220,247,262,294, 262,247,220,0,   247,262,294,330, 311,294,262,247,
+  262,294,330,392, 349,330,294,262, 247,220,247,262, 294,330,0,0,
+  // Phrase A finale — builds to end
+  330,392,440,494, 523,494,440,392, 330,294,330,392, 440,494,523,0,
+  494,440,392,330, 294,262,294,330, 392,440,494,440, 392,330,0,0
 ];
 
-// Bass line — 96 notes matching each phrase
+// Bass line — root notes of each chord, triangle wave
 var bgmBass = [
-  // Phrase A bass
-  196,0,196,0, 220,0,196,0, 175,0,196,0, 196,0,175,0,
-  220,0,220,0, 247,0,220,0, 196,0,196,0, 220,0,196,0,
-  // Phrase B bass
-  131,0,147,0, 165,0,147,0, 131,0,123,0, 131,0,147,0,
-  156,0,165,0, 147,0,131,0, 110,0,123,0, 131,0,0,0,
-  // Phrase C bass
-  196,0,220,0, 247,0,262,0, 220,0,196,0, 220,0,247,0,
-  247,0,220,0, 196,0,175,0, 196,0,185,0, 196,0,0,0
+  // Phrase A bass — Am / F / C / G
+  110,0,110,0,   175,0,175,0,   131,0,131,0,   196,0,196,0,
+  110,0,110,0,   175,0,175,0,   131,0,196,0,   110,0,0,0,
+  // Phrase A repeat bass
+  110,0,110,0,   175,0,175,0,   131,0,131,0,   165,0,165,0,
+  196,0,196,0,   220,0,220,0,   175,0,175,0,   196,0,0,0,
+  // Phrase B bass — Dm / Am / F / G
+  147,0,147,0,   110,0,110,0,   175,0,175,0,   196,0,196,0,
+  131,0,131,0,   175,0,175,0,   110,0,110,0,   147,0,0,0,
+  // Finale bass — builds
+  110,0,110,0,   175,0,175,0,   196,0,196,0,   220,0,220,0,
+  247,0,247,0,   196,0,196,0,   175,0,175,0,   110,0,0,0
 ];
 
-// Durations in ms — mix of 100/140/180 for rhythmic variety
+// Durations — 120ms base with 80ms rests, some 160ms long notes for feel
 var bgmDurations = [
-  100,60,100,60, 140,100,100,60, 100,100,140,60, 180,100,140,60,
-  100,60,100,60, 140,100,100,60, 100,100,180,60, 140,100,160,80,
-  100,60,100,60, 100,100,140,60, 100,60,140,60,  100,100,100,60,
-  140,60,140,60, 100,100,140,60, 180,60,100,60,  200,100,160,80,
-  100,60,100,60, 120,100,120,60, 100,60,100,60,  120,100,100,60,
-  120,60,100,60, 100,100,100,60, 140,60,140,60,  200,100,180,80
+  120,40,120,160, 120,120,80,120, 120,40,120,160, 120,120,80,120,
+  120,120,120,120, 160,120,120,120, 120,120,120,120, 200,80,200,80,
+  120,40,120,160, 120,120,80,120, 120,120,120,160, 200,120,80,80,
+  120,120,160,160, 160,120,120,120, 120,120,120,120, 240,80,240,80,
+  160,120,120,120, 120,120,160,80, 120,120,120,120, 160,120,120,120,
+  120,120,120,120, 120,120,120,120, 120,120,120,120, 200,120,80,80,
+  120,120,120,160, 160,120,120,120, 120,120,120,120, 160,120,160,80,
+  160,120,120,120, 120,120,120,120, 120,120,160,120, 240,120,80,80
 ];
 
 function startBGM() {
   if(bgmPlaying) return;
   bgmPlaying = true;
-  // Don't reset bgmIdx so music continues from where it was
   scheduleBGM();
 }
 function scheduleBGM() {
@@ -193,8 +201,8 @@ function scheduleBGM() {
   var mel = bgmMelody[i];
   var bas = bgmBass[i];
   var dur = bgmDurations[i];
-  if(mel > 0) playTone(mel, 'square', dur * 0.0008, 0.07);
-  if(bas > 0) playTone(bas, 'triangle', dur * 0.0009, 0.045);
+  if(mel > 0) playTone(mel, 'square', dur * 0.00075, 0.07);
+  if(bas > 0) playTone(bas, 'triangle', dur * 0.00090, 0.045);
   bgmIdx++;
   bgmInterval = setTimeout(scheduleBGM, dur);
 }
@@ -202,7 +210,7 @@ function stopBGM() {
   bgmPlaying = false;
   if(bgmInterval) clearTimeout(bgmInterval);
 }
-function setBGMTempo(t) { /* intentionally no-op — tempo is now fixed */ }
+function setBGMTempo(t) { /* fixed tempo */ }
 
 soundBtn.addEventListener('click', function() {
   initAudio();
@@ -254,7 +262,102 @@ function saveHighScore(score) {
   }
 }
 
-// ---- Pixel art drawing ----
+// ---- Worlds ----
+var WORLDS = [
+  {
+    id: 'crystal',
+    name: 'Crystal Cave',
+    unlockGames: 0,
+    // Background gradients
+    bgTop: '#0d0018', bgMid: '#0a0015', bgBot: '#1a0810',
+    // Bottom glow
+    glowColor: 'rgba(100,0,200,0.25)',
+    // Wall color
+    wallColor: '#1a0f28', fgColor: '#0d0818',
+    // Crystal colors
+    crystalColors: ['#00e5ff','#7c4dff','#40c0a0','#00bcd4'],
+    // Torch flame
+    flameTop: 'rgba(255,255,100,0.9)', flameMid: 'rgba(255,120,0,0.7)', flameBot: 'rgba(255,60,0,0)',
+    // Stalactite colors
+    stalColor: '#3d2060', stalTip: '#00e5ff',
+    // Accent color for UI
+    accent: '#7c4dff', accentLight: '#00e5ff'
+  },
+  {
+    id: 'magma',
+    name: 'Magma Depths',
+    unlockGames: 10,
+    bgTop: '#1a0500', bgMid: '#2a0800', bgBot: '#3a1000',
+    glowColor: 'rgba(255,80,0,0.4)',
+    wallColor: '#2a0f00', fgColor: '#1a0800',
+    crystalColors: ['#ff4400','#ff8800','#cc2200','#ff6600'],
+    flameTop: 'rgba(255,255,100,0.9)', flameMid: 'rgba(255,80,0,0.8)', flameBot: 'rgba(200,0,0,0)',
+    stalColor: '#4a1500', stalTip: '#ff6600',
+    accent: '#ff4400', accentLight: '#ff8800'
+  },
+  {
+    id: 'glacier',
+    name: 'Glacier Vault',
+    unlockGames: 25,
+    bgTop: '#000d1a', bgMid: '#001020', bgBot: '#001828',
+    glowColor: 'rgba(0,180,255,0.2)',
+    wallColor: '#0a1f2f', fgColor: '#061018',
+    crystalColors: ['#80e8ff','#c0f0ff','#40a8cc','#a0d8f0'],
+    flameTop: 'rgba(200,240,255,0.9)', flameMid: 'rgba(80,180,255,0.7)', flameBot: 'rgba(0,100,200,0)',
+    stalColor: '#0a2a3a', stalTip: '#80e8ff',
+    accent: '#40a8cc', accentLight: '#c0f0ff'
+  },
+  {
+    id: 'crypt',
+    name: 'Cursed Crypt',
+    unlockGames: 50,
+    bgTop: '#050010', bgMid: '#080015', bgBot: '#100818',
+    glowColor: 'rgba(0,200,80,0.2)',
+    wallColor: '#100820', fgColor: '#080010',
+    crystalColors: ['#00ff88','#40cc44','#008844','#80ff44'],
+    flameTop: 'rgba(180,255,80,0.9)', flameMid: 'rgba(0,200,80,0.7)', flameBot: 'rgba(0,80,20,0)',
+    stalColor: '#1a0830', stalTip: '#00ff88',
+    accent: '#00cc66', accentLight: '#80ff44'
+  },
+  {
+    id: 'ruins',
+    name: 'Ancient Ruins',
+    unlockGames: 100,
+    bgTop: '#100800', bgMid: '#180c00', bgBot: '#201000',
+    glowColor: 'rgba(200,160,0,0.2)',
+    wallColor: '#1e1408', fgColor: '#120c04',
+    crystalColors: ['#c8a000','#e8c840','#a07820','#ffd060'],
+    flameTop: 'rgba(255,220,100,0.9)', flameMid: 'rgba(200,140,0,0.7)', flameBot: 'rgba(100,60,0,0)',
+    stalColor: '#2a1e08', stalTip: '#c8a000',
+    accent: '#c8a000', accentLight: '#ffd060'
+  },
+  {
+    id: 'cosmic',
+    name: 'Cosmic Abyss',
+    unlockGames: 200,
+    bgTop: '#000008', bgMid: '#00000e', bgBot: '#080018',
+    glowColor: 'rgba(120,0,255,0.3)',
+    wallColor: '#08001a', fgColor: '#04000e',
+    crystalColors: ['#cc00ff','#ff00cc','#8800ff','#ff44ff'],
+    flameTop: 'rgba(220,180,255,0.9)', flameMid: 'rgba(140,0,255,0.7)', flameBot: 'rgba(60,0,120,0)',
+    stalColor: '#140028', stalTip: '#cc00ff',
+    accent: '#aa00ff', accentLight: '#ff44ff'
+  }
+];
+
+// ---- Games played helpers ----
+function getGamesPlayed() {
+  return parseInt(localStorage.getItem('cq_gp') || '0');
+}
+function incrementGamesPlayed() {
+  localStorage.setItem('cq_gp', getGamesPlayed() + 1);
+}
+function isWorldUnlocked(worldIndex) {
+  return getGamesPlayed() >= WORLDS[worldIndex].unlockGames;
+}
+function getActiveWorld() {
+  return WORLDS[state.selectedWorld] || WORLDS[0];
+}
 function drawPixelChar(ctx, ch, x, y, size, frame) {
   var s = size / 16;
   ctx.save();
@@ -607,32 +710,33 @@ function drawMinotaur(ctx, ch, s, frame) {
 }
 function drawCave(scrollX) {
   var W = canvas.width, H = canvas.height;
+  var w = getActiveWorld();
+
   // Deep background
   var grad = ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#0d0018');
-  grad.addColorStop(0.5,'#0a0015');
-  grad.addColorStop(1,'#1a0810');
+  grad.addColorStop(0, w.bgTop);
+  grad.addColorStop(0.5, w.bgMid);
+  grad.addColorStop(1, w.bgBot);
   ctx.fillStyle = grad;
   ctx.fillRect(0,0,W,H);
 
-  // Lava glow at bottom
-  var lavaGrad = ctx.createLinearGradient(0,H*0.85,0,H);
-  lavaGrad.addColorStop(0,'rgba(0,0,0,0)');
-  lavaGrad.addColorStop(1,'rgba(200,60,0,0.3)');
-  ctx.fillStyle = lavaGrad;
+  // Bottom glow
+  var glowGrad = ctx.createLinearGradient(0,H*0.85,0,H);
+  glowGrad.addColorStop(0,'rgba(0,0,0,0)');
+  glowGrad.addColorStop(1, w.glowColor);
+  ctx.fillStyle = glowGrad;
   ctx.fillRect(0,H*0.85,W,H*0.15);
 
-  // Far background crystals (slow parallax)
-  drawCrystals(ctx, scrollX * 0.2, W, H);
+  // Stars for Cosmic Abyss
+  if(w.id === 'cosmic') drawStars(scrollX, W, H);
 
-  // Mid layer - cave wall texture
-  drawCaveWalls(ctx, scrollX * 0.5, W, H);
-
-  // Foreground rocks (fast parallax)
-  drawForegroundRocks(ctx, scrollX * 1.0, W, H);
+  drawCrystals(ctx, scrollX * 0.2, W, H, w.crystalColors);
+  drawCaveWalls(ctx, scrollX * 0.5, W, H, w);
+  drawForegroundRocks(ctx, scrollX * 1.0, W, H, w.fgColor);
 }
 
-function drawCrystals(ctx, ox, W, H) {
+function drawCrystals(ctx, ox, W, H, colors) {
+  var crystalColors = colors || ['#00e5ff','#7c4dff','#40c0a0','#00bcd4'];
   var seed = 42;
   ctx.save();
   for(var i=0; i<12; i++){
@@ -642,8 +746,7 @@ function drawCrystals(ctx, ox, W, H) {
     var h2 = 20 + (Math.abs(seed) % 40);
     seed = (seed * 1664525 + 1013904223) & 0xffffffff;
     var side = seed % 2;
-    var colors = ['#00e5ff','#7c4dff','#40c0a0','#00bcd4'];
-    var col = colors[Math.abs(seed) % colors.length];
+    var col = crystalColors[Math.abs(seed) % crystalColors.length];
     ctx.fillStyle = col;
     ctx.globalAlpha = 0.3 + (Math.abs(seed) % 30) / 100;
     var cx = x % W;
@@ -657,9 +760,9 @@ function drawCrystals(ctx, ox, W, H) {
   ctx.restore();
 }
 
-function drawCaveWalls(ctx, ox, W, H) {
-  // Top rock silhouette
-  ctx.fillStyle = '#1a0f28';
+function drawCaveWalls(ctx, ox, W, H, w) {
+  var wallCol = (w && w.wallColor) || '#1a0f28';
+  ctx.fillStyle = wallCol;
   ctx.beginPath();
   ctx.moveTo(0,0);
   var topH = H * 0.12;
@@ -670,8 +773,7 @@ function drawCaveWalls(ctx, ox, W, H) {
   }
   ctx.lineTo(W,0); ctx.closePath(); ctx.fill();
 
-  // Bottom rock silhouette
-  ctx.fillStyle = '#1a0f28';
+  ctx.fillStyle = wallCol;
   ctx.beginPath();
   ctx.moveTo(0,H);
   var botH = H * 0.12;
@@ -682,49 +784,57 @@ function drawCaveWalls(ctx, ox, W, H) {
   }
   ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
 
-  // Torches
-  drawTorches(ctx, ox, W, H);
+  drawTorches(ctx, ox, W, H, w);
+}
+
+// Special: stars for Cosmic Abyss
+function drawStars(ox, W, H) {
+  var seed = 99;
+  ctx.save();
+  for(var i=0; i<40; i++){
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    var sx = ((Math.abs(seed) % W) + ox * 0.05) % W;
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    var sy = H * 0.1 + (Math.abs(seed) % (H * 0.8));
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    var sr = 0.5 + (Math.abs(seed) % 20) / 10;
+    ctx.globalAlpha = 0.4 + (Math.abs(seed) % 6) / 10;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 var torchFlicker = 0;
-function drawTorches(ctx, ox, W, H) {
+function drawTorches(ctx, ox, W, H, w) {
   torchFlicker += 0.1;
   var positions = [0.15, 0.45, 0.75];
   for(var i=0; i<positions.length; i++){
     var tx = ((positions[i]*W*2 - ox) % W + W) % W;
     var ty = H*0.14;
-    // Torch stick
     ctx.fillStyle = '#8B4513';
     ctx.fillRect(tx-3, ty, 6, 18);
-    // Flame
     var flameH = 16 + Math.sin(torchFlicker + i*2)*4;
+    var ft = (w && w.flameTop) || 'rgba(255,255,100,0.9)';
+    var fm = (w && w.flameMid) || 'rgba(255,120,0,0.7)';
+    var fb = (w && w.flameBot) || 'rgba(255,60,0,0)';
     var flameGrad = ctx.createRadialGradient(tx, ty, 1, tx, ty, flameH);
-    flameGrad.addColorStop(0,'rgba(255,255,100,0.9)');
-    flameGrad.addColorStop(0.5,'rgba(255,120,0,0.7)');
-    flameGrad.addColorStop(1,'rgba(255,60,0,0)');
+    flameGrad.addColorStop(0, ft); flameGrad.addColorStop(0.5, fm); flameGrad.addColorStop(1, fb);
     ctx.fillStyle = flameGrad;
-    ctx.beginPath();
-    ctx.ellipse(tx, ty - flameH/2, 8, flameH/2, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // Bottom torches
+    ctx.beginPath(); ctx.ellipse(tx, ty - flameH/2, 8, flameH/2, 0, 0, Math.PI*2); ctx.fill();
     var ty2 = H - H*0.14 - 18;
     ctx.fillStyle = '#8B4513';
     ctx.fillRect(tx-3, ty2, 6, 18);
     var flameGrad2 = ctx.createRadialGradient(tx, ty2+18, 1, tx, ty2+18, flameH);
-    flameGrad2.addColorStop(0,'rgba(255,255,100,0.9)');
-    flameGrad2.addColorStop(0.5,'rgba(255,120,0,0.7)');
-    flameGrad2.addColorStop(1,'rgba(255,60,0,0)');
+    flameGrad2.addColorStop(0, ft); flameGrad2.addColorStop(0.5, fm); flameGrad2.addColorStop(1, fb);
     ctx.fillStyle = flameGrad2;
-    ctx.beginPath();
-    ctx.ellipse(tx, ty2+18+flameH/2, 8, flameH/2, 0, 0, Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(tx, ty2+18+flameH/2, 8, flameH/2, 0, 0, Math.PI*2); ctx.fill();
   }
 }
 
-function drawForegroundRocks(ctx, ox, W, H) {
-  ctx.fillStyle = '#0d0818';
-  // Top rocks
+function drawForegroundRocks(ctx, ox, W, H, fgCol) {
+  ctx.fillStyle = fgCol || '#0d0818';
   ctx.beginPath(); ctx.moveTo(0,0);
   for(var x=0; x<=W+30; x+=30){
     var nx = ((x + ox) % (W*1.5));
@@ -732,8 +842,6 @@ function drawForegroundRocks(ctx, ox, W, H) {
     ctx.lineTo(x, y);
   }
   ctx.lineTo(W,0); ctx.closePath(); ctx.fill();
-
-  // Bottom rocks
   ctx.beginPath(); ctx.moveTo(0,H);
   for(var x2=0; x2<=W+30; x2+=30){
     var nx2 = ((x2 + ox*1.2) % (W*1.5));
@@ -745,8 +853,9 @@ function drawForegroundRocks(ctx, ox, W, H) {
 
 // ---- Game state ----
 var state = {
-  screen: 'title',   // 'title' | 'charselect' | 'game' | 'gameover'
+  screen: 'title',   // 'title' | 'charselect' | 'worldselect' | 'game' | 'gameover'
   selectedChar: 0,
+  selectedWorld: 0,
   score: 0,
   highScore: getHighScore(),
   lastScore: 0,
@@ -928,51 +1037,52 @@ function drawObstacles() {
 function drawObstacle(o, H) {
   ctx.save();
   if(o.type === 'stalactite') {
+    var aw = getActiveWorld();
     // Top stalactite
-    ctx.fillStyle = '#3d2060';
+    ctx.fillStyle = aw.stalColor;
     var tw = o.w;
     ctx.beginPath();
-    ctx.moveTo(o.x, 0);
-    ctx.lineTo(o.x + tw, 0);
-    ctx.lineTo(o.x + tw, o.topH - 20);
-    ctx.lineTo(o.x + tw/2, o.topH);
-    ctx.lineTo(o.x, o.topH - 20);
+    ctx.moveTo(o.x, 0); ctx.lineTo(o.x + tw, 0);
+    ctx.lineTo(o.x + tw, o.topH - 20); ctx.lineTo(o.x + tw/2, o.topH); ctx.lineTo(o.x, o.topH - 20);
     ctx.closePath(); ctx.fill();
-    // Crystal tip
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = aw.stalTip;
     ctx.beginPath();
-    ctx.moveTo(o.x + tw/2 - 5, o.topH - 15);
-    ctx.lineTo(o.x + tw/2 + 5, o.topH - 15);
-    ctx.lineTo(o.x + tw/2, o.topH + 2);
+    ctx.moveTo(o.x + tw/2 - 5, o.topH - 15); ctx.lineTo(o.x + tw/2 + 5, o.topH - 15); ctx.lineTo(o.x + tw/2, o.topH + 2);
     ctx.closePath(); ctx.fill();
     // Bottom stalagmite
-    ctx.fillStyle = '#3d2060';
+    ctx.fillStyle = aw.stalColor;
     ctx.beginPath();
-    ctx.moveTo(o.x, H);
-    ctx.lineTo(o.x + tw, H);
-    ctx.lineTo(o.x + tw, o.botY + 20);
-    ctx.lineTo(o.x + tw/2, o.botY);
-    ctx.lineTo(o.x, o.botY + 20);
+    ctx.moveTo(o.x, H); ctx.lineTo(o.x + tw, H);
+    ctx.lineTo(o.x + tw, o.botY + 20); ctx.lineTo(o.x + tw/2, o.botY); ctx.lineTo(o.x, o.botY + 20);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = aw.stalTip;
     ctx.beginPath();
-    ctx.moveTo(o.x + tw/2 - 5, o.botY + 15);
-    ctx.lineTo(o.x + tw/2 + 5, o.botY + 15);
-    ctx.lineTo(o.x + tw/2, o.botY - 2);
+    ctx.moveTo(o.x + tw/2 - 5, o.botY + 15); ctx.lineTo(o.x + tw/2 + 5, o.botY + 15); ctx.lineTo(o.x + tw/2, o.botY - 2);
     ctx.closePath(); ctx.fill();
 
   } else if(o.type === 'slime') {
     var bob = Math.sin(o.animT) * 4;
-    // Glow halo
+    // Spikes on top — sharp orange triangles
+    ctx.fillStyle = '#ff6600';
+    for(var sp=0; sp<4; sp++){
+      var sx2 = o.x + 5 + sp*7;
+      var spikeH = 10 + (sp%2)*4;
+      ctx.beginPath();
+      ctx.moveTo(sx2, o.y - 12 + bob);
+      ctx.lineTo(sx2-4, o.y - 12 + spikeH*0.6 + bob);
+      ctx.lineTo(sx2+4, o.y - 12 + spikeH*0.6 + bob);
+      ctx.closePath(); ctx.fill();
+    }
+    // Glow halo — orange
     ctx.save();
-    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 14;
-    ctx.fillStyle = '#00ff66';
+    ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ff6600';
     ctx.beginPath();
     ctx.ellipse(o.x + 14, o.y + bob, 14, 12, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
     // Highlight shine
-    ctx.fillStyle = '#88ffcc';
+    ctx.fillStyle = '#ffcc88';
     ctx.beginPath();
     ctx.ellipse(o.x + 10, o.y - 3 + bob, 5, 4, -0.4, 0, Math.PI*2);
     ctx.fill();
@@ -983,8 +1093,12 @@ function drawObstacle(o, H) {
     ctx.fillStyle = '#000';
     ctx.fillRect(o.x+8, o.y+bob, 4, 4);
     ctx.fillRect(o.x+19, o.y+bob, 4, 4);
+    // Angry eyebrows
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(o.x+5, o.y-4+bob); ctx.lineTo(o.x+13, o.y-2+bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(o.x+16, o.y-2+bob); ctx.lineTo(o.x+24, o.y-4+bob); ctx.stroke();
     // Bright outline
-    ctx.strokeStyle = '#00ff44'; ctx.lineWidth=2.5;
+    ctx.strokeStyle = '#ff4400'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.ellipse(o.x+14, o.y+bob, 14, 12, 0, 0, Math.PI*2); ctx.stroke();
 
   } else if(o.type === 'spider') {
@@ -1387,7 +1501,266 @@ function drawCharSelect() {
   ctx.restore();
 }
 
-// ---- GAME SCREEN ----
+// ---- Cave icons (pixel art drawn on canvas) ----
+function drawCaveIcon(ctx, worldId, cx, cy, size, greyed) {
+  ctx.save();
+  if(greyed) ctx.globalAlpha = 0.22;
+  var s = size / 32;
+  ctx.translate(cx - size/2, cy - size/2);
+
+  if(worldId === 'crystal') {
+    // Crystal clusters
+    ctx.fillStyle = greyed ? '#888' : '#7c4dff';
+    ctx.beginPath(); ctx.moveTo(14*s,2*s); ctx.lineTo(10*s,14*s); ctx.lineTo(18*s,14*s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = greyed ? '#aaa' : '#00e5ff';
+    ctx.beginPath(); ctx.moveTo(20*s,4*s); ctx.lineTo(17*s,14*s); ctx.lineTo(23*s,14*s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = greyed ? '#666' : '#4a2080';
+    ctx.beginPath(); ctx.moveTo(8*s,5*s); ctx.lineTo(5*s,14*s); ctx.lineTo(11*s,14*s); ctx.closePath(); ctx.fill();
+    // Ground
+    ctx.fillStyle = greyed ? '#555' : '#1a0f28';
+    ctx.fillRect(2*s, 14*s, 28*s, 8*s);
+    // Bottom crystals
+    ctx.fillStyle = greyed ? '#888' : '#00e5ff';
+    ctx.beginPath(); ctx.moveTo(10*s,30*s); ctx.lineTo(7*s,22*s); ctx.lineTo(13*s,22*s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = greyed ? '#aaa' : '#7c4dff';
+    ctx.beginPath(); ctx.moveTo(22*s,30*s); ctx.lineTo(19*s,21*s); ctx.lineTo(25*s,21*s); ctx.closePath(); ctx.fill();
+
+  } else if(worldId === 'magma') {
+    // Lava pool
+    ctx.fillStyle = greyed ? '#555' : '#cc2200';
+    ctx.fillRect(2*s, 18*s, 28*s, 12*s);
+    ctx.fillStyle = greyed ? '#888' : '#ff6600';
+    ctx.fillRect(4*s, 20*s, 6*s, 4*s);
+    ctx.fillRect(14*s, 19*s, 8*s, 3*s);
+    // Volcano rocks
+    ctx.fillStyle = greyed ? '#444' : '#2a0f00';
+    ctx.beginPath(); ctx.moveTo(8*s,18*s); ctx.lineTo(2*s,8*s); ctx.lineTo(14*s,8*s); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(22*s,18*s); ctx.lineTo(18*s,10*s); ctx.lineTo(28*s,10*s); ctx.closePath(); ctx.fill();
+    // Flame
+    ctx.fillStyle = greyed ? '#999' : '#ff4400';
+    ctx.beginPath(); ctx.moveTo(8*s,8*s); ctx.lineTo(6*s,2*s); ctx.lineTo(10*s,5*s); ctx.lineTo(12*s,1*s); ctx.lineTo(14*s,5*s); ctx.lineTo(18*s,2*s); ctx.lineTo(16*s,8*s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = greyed ? '#bbb' : '#ffcc00';
+    ctx.beginPath(); ctx.moveTo(10*s,8*s); ctx.lineTo(9*s,4*s); ctx.lineTo(12*s,6*s); ctx.lineTo(14*s,3*s); ctx.lineTo(16*s,8*s); ctx.closePath(); ctx.fill();
+
+  } else if(worldId === 'glacier') {
+    // Ice wall background
+    ctx.fillStyle = greyed ? '#444' : '#0a1f2f';
+    ctx.fillRect(2*s,2*s,28*s,28*s);
+    // Ice stalactites
+    ctx.fillStyle = greyed ? '#888' : '#80e8ff';
+    for(var ic=0; ic<4; ic++){
+      var ix = (4+ic*7)*s;
+      ctx.beginPath(); ctx.moveTo(ix,2*s); ctx.lineTo(ix-4*s,12*s); ctx.lineTo(ix+4*s,12*s); ctx.closePath(); ctx.fill();
+    }
+    // Ice floor
+    ctx.fillStyle = greyed ? '#666' : '#40a8cc';
+    ctx.fillRect(2*s,22*s,28*s,8*s);
+    // Snowflakes
+    ctx.fillStyle = greyed ? '#aaa' : '#c0f0ff';
+    ctx.fillRect(8*s,17*s,2*s,2*s); ctx.fillRect(18*s,15*s,2*s,2*s); ctx.fillRect(24*s,18*s,2*s,2*s);
+
+  } else if(worldId === 'crypt') {
+    // Dark background
+    ctx.fillStyle = greyed ? '#333' : '#100820';
+    ctx.fillRect(2*s,2*s,28*s,28*s);
+    // Skull
+    ctx.fillStyle = greyed ? '#888' : '#e8e8d8';
+    ctx.beginPath(); ctx.ellipse(16*s,12*s,8*s,7*s,0,0,Math.PI*2); ctx.fill();
+    // Eye sockets
+    ctx.fillStyle = greyed ? '#444' : '#00ff88';
+    ctx.beginPath(); ctx.ellipse(12*s,11*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(20*s,11*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+    // Teeth
+    ctx.fillStyle = greyed ? '#888' : '#e8e8d8';
+    for(var tc=0; tc<4; tc++){ ctx.fillRect((11+tc*3)*s,17*s,2*s,4*s); }
+    // Tombstone
+    ctx.fillStyle = greyed ? '#555' : '#2a1040';
+    ctx.fillRect(10*s,22*s,12*s,8*s);
+    ctx.beginPath(); ctx.arc(16*s,22*s,6*s,Math.PI,0); ctx.fill();
+    // Cross
+    ctx.fillStyle = greyed ? '#888' : '#00ff88';
+    ctx.fillRect(15*s,23*s,2*s,6*s); ctx.fillRect(12*s,25*s,8*s,2*s);
+
+  } else if(worldId === 'ruins') {
+    // Ground
+    ctx.fillStyle = greyed ? '#444' : '#1e1408';
+    ctx.fillRect(2*s,22*s,28*s,8*s);
+    // Pillars
+    ctx.fillStyle = greyed ? '#666' : '#a08040';
+    ctx.fillRect(4*s,8*s,6*s,14*s);
+    ctx.fillRect(22*s,10*s,6*s,12*s);
+    // Pillar tops
+    ctx.fillRect(2*s,6*s,10*s,3*s);
+    ctx.fillRect(20*s,8*s,10*s,3*s);
+    // Broken pillar piece
+    ctx.fillStyle = greyed ? '#555' : '#7a5020';
+    ctx.fillRect(12*s,18*s,6*s,4*s);
+    // Gold coins
+    ctx.fillStyle = greyed ? '#aaa' : '#ffd060';
+    ctx.beginPath(); ctx.arc(16*s,5*s,3*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10*s,14*s,2*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22*s,16*s,2*s,0,Math.PI*2); ctx.fill();
+    // Hieroglyph lines on pillar
+    ctx.strokeStyle = greyed ? '#888' : '#c8a000'; ctx.lineWidth = s;
+    ctx.beginPath(); ctx.moveTo(6*s,12*s); ctx.lineTo(8*s,12*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6*s,15*s); ctx.lineTo(9*s,15*s); ctx.stroke();
+
+  } else if(worldId === 'cosmic') {
+    // Space bg
+    ctx.fillStyle = greyed ? '#222' : '#000010';
+    ctx.fillRect(2*s,2*s,28*s,28*s);
+    // Stars
+    ctx.fillStyle = greyed ? '#666' : '#ffffff';
+    var starPos = [4,8,10,3,18,6,24,12,6,20,14,16,26,8,22,24];
+    for(var si=0; si<starPos.length; si+=2){
+      ctx.fillRect(starPos[si]*s, starPos[si+1]*s, s, s);
+    }
+    // Planet
+    ctx.fillStyle = greyed ? '#555' : '#aa00ff';
+    ctx.beginPath(); ctx.arc(16*s,16*s,7*s,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = greyed ? '#777' : '#cc44ff';
+    ctx.beginPath(); ctx.arc(14*s,13*s,3*s,0,Math.PI*2); ctx.fill();
+    // Ring
+    ctx.strokeStyle = greyed ? '#666' : '#ff44ff'; ctx.lineWidth = 1.5*s;
+    ctx.beginPath(); ctx.ellipse(16*s,16*s,12*s,4*s,Math.PI*0.2,0,Math.PI*2); ctx.stroke();
+    // Nebula glow
+    ctx.save();
+    ctx.globalAlpha = greyed ? 0.22 * 0.3 : 0.3;
+    ctx.fillStyle = greyed ? '#555' : '#8800ff';
+    ctx.beginPath(); ctx.arc(8*s,24*s,6*s,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// ---- WORLD SELECT SCREEN ----
+var WS_COLS = 3, WS_ROWS = 2;
+function getWorldSelectLayout(W, H) {
+  var pad = W * 0.025;
+  var headerH = H * 0.11;
+  var footerH = H * 0.09;
+  var gridW = W - pad*2;
+  var gridH = H - headerH - footerH - pad*2;
+  var cellW = gridW / WS_COLS;
+  var cellH = gridH / WS_ROWS;
+  return { pad:pad, headerH:headerH, footerH:footerH, gridW:gridW, gridH:gridH, cellW:cellW, cellH:cellH, gridTop: headerH + pad };
+}
+
+function drawWorldSelect() {
+  var W = canvas.width, H = canvas.height;
+  var gp = getGamesPlayed();
+  var L = getWorldSelectLayout(W, H);
+  if(!state.selectedWorld) state.selectedWorld = 0;
+
+  drawCave(scrollX);
+
+  // Header
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,0,18,0.94)';
+  roundRect(ctx, L.pad, L.pad*0.5, W-L.pad*2, L.headerH-L.pad*0.5, 10);
+  ctx.fill();
+  ctx.strokeStyle = getActiveWorld().accent; ctx.lineWidth = 2;
+  roundRect(ctx, L.pad, L.pad*0.5, W-L.pad*2, L.headerH-L.pad*0.5, 10);
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  var hfs = Math.floor(H*0.034);
+  ctx.font = hfs + 'px "Press Start 2P"';
+  while(ctx.measureText('CHOOSE WORLD').width > W*0.82 && hfs > 8) { hfs--; ctx.font = hfs+'px "Press Start 2P"'; }
+  ctx.fillStyle = getActiveWorld().accentLight;
+  ctx.fillText('CHOOSE WORLD', W/2, L.headerH*0.72);
+  ctx.restore();
+
+  for(var i=0; i<WORLDS.length; i++){
+    var col = i % WS_COLS, row = Math.floor(i / WS_COLS);
+    var cellX = L.pad + col * L.cellW;
+    var cellY = L.gridTop + row * L.cellH;
+    var cx = cellX + L.cellW/2;
+    var cy = cellY + L.cellH/2;
+    var unlocked = isWorldUnlocked(i);
+    var selected = i === state.selectedWorld;
+    var innerW = L.cellW - 4, innerH = L.cellH - 4;
+    var innerX = cellX + 2, innerY = cellY + 2;
+
+    // Cell background
+    ctx.save();
+    var bgGrad = ctx.createLinearGradient(cellX, cellY, cellX, cellY+L.cellH);
+    bgGrad.addColorStop(0, WORLDS[i].bgTop);
+    bgGrad.addColorStop(1, WORLDS[i].bgBot);
+    ctx.fillStyle = bgGrad;
+    roundRect(ctx, innerX, innerY, innerW, innerH, 8);
+    ctx.fill();
+
+    // Clip all content to cell
+    ctx.beginPath();
+    roundRect(ctx, innerX, innerY, innerW, innerH, 8);
+    ctx.clip();
+
+    // Draw icon — greyed if locked
+    var iconSize = Math.min(innerW, innerH) * 0.52;
+    drawCaveIcon(ctx, WORLDS[i].id, cx, cy - innerH*0.08, iconSize, !unlocked);
+
+    ctx.restore();
+
+    // Border
+    ctx.save();
+    ctx.strokeStyle = selected && unlocked ? WORLDS[i].accentLight : unlocked ? WORLDS[i].accent : 'rgba(80,40,100,0.3)';
+    ctx.lineWidth = selected && unlocked ? 3 : 1.5;
+    roundRect(ctx, innerX, innerY, innerW, innerH, 8);
+    ctx.stroke();
+    ctx.restore();
+
+    // Text — always outside clip so it doesn't get cut
+    ctx.save();
+    ctx.textAlign = 'center';
+    if(unlocked) {
+      // Two lines: word1 / word2+
+      var parts = WORLDS[i].name.split(' ');
+      var wLine1 = parts[0];
+      var wLine2 = parts.slice(1).join(' ');
+      var nfs = Math.floor(innerW * 0.115);
+      ctx.font = nfs + 'px "Press Start 2P"';
+      var wider2 = ctx.measureText(wLine1).width > ctx.measureText(wLine2).width ? wLine1 : wLine2;
+      while(ctx.measureText(wider2).width > innerW*0.88 && nfs > 5) { nfs--; ctx.font = nfs+'px "Press Start 2P"'; }
+      var textY = innerY + innerH * 0.76;
+      ctx.fillStyle = selected ? WORLDS[i].accentLight : '#e8e8ff';
+      ctx.fillText(wLine1, cx, textY);
+      ctx.fillStyle = selected ? WORLDS[i].accent : '#9999bb';
+      ctx.fillText(wLine2, cx, textY + nfs*1.65);
+    } else {
+      // Lock icon + games played progress + unlock number
+      ctx.font = Math.floor(innerH*0.20) + 'px sans-serif';
+      ctx.fillText('🔒', cx, innerY + innerH*0.45);
+      // Games played / unlock number
+      var lfs2 = Math.floor(innerW * 0.105);
+      ctx.font = lfs2 + 'px "Press Start 2P"';
+      ctx.fillStyle = '#ff9900';
+      var progStr = gp + ' / ' + WORLDS[i].unlockGames;
+      while(ctx.measureText(progStr).width > innerW*0.86 && lfs2 > 4) { lfs2--; ctx.font = lfs2+'px "Press Start 2P"'; }
+      ctx.fillText(progStr, cx, innerY + innerH*0.72);
+      ctx.font = Math.floor(lfs2*0.80) + 'px "Press Start 2P"';
+      ctx.fillStyle = '#aaaacc';
+      ctx.fillText('games', cx, innerY + innerH*0.87);
+    }
+    ctx.restore();
+  }
+
+  // Footer
+  var footerY = L.gridTop + L.gridH + L.pad*0.5;
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,0,18,0.88)';
+  roundRect(ctx, L.pad, footerY, W-L.pad*2, H-footerY-L.pad*0.5, 10);
+  ctx.fill();
+  ctx.strokeStyle = getActiveWorld().accent; ctx.lineWidth = 1.5;
+  roundRect(ctx, L.pad, footerY, W-L.pad*2, H-footerY-L.pad*0.5, 10);
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.font = Math.floor(H*0.026) + 'px "Press Start 2P"';
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.6 + Math.sin(Date.now()*0.004)*0.4;
+  ctx.fillText('TAP TO PLAY', W/2, footerY + (H-footerY-L.pad*0.5)*0.62);
+  ctx.restore();
+}
 function drawGame() {
   var W = canvas.width, H = canvas.height;
   drawCave(scrollX);
@@ -1502,6 +1875,9 @@ function drawGameOver() {
     if(hs2 < CHARACTERS[ni].unlockScore) { nextUnlock = CHARACTERS[ni]; break; }
   }
   ctx.font = Math.floor(H*0.015) + 'px "Press Start 2P"';
+  ctx.fillStyle = '#7c4dff';
+  ctx.fillText('GAMES PLAYED: ' + getGamesPlayed(), W/2, H*0.68);
+
   if(nextUnlock) {
     ctx.fillStyle = '#ff9900';
     ctx.fillText('NEXT: ' + fullName(nextUnlock) + ' @ ' + nextUnlock.unlockScore, W/2, H*0.62);
@@ -1555,19 +1931,36 @@ function handleTap(ex, ey) {
   } else if(state.screen === 'charselect') {
     var W = canvas.width, H = canvas.height;
     var L = getCharSelectLayout(W, H);
-    // Check each character cell
     for(var i=0; i<CHARACTERS.length; i++){
       var col = i % CS_COLS, row = Math.floor(i / CS_COLS);
       var cellX = L.pad + col * L.cellW;
       var cellY = L.gridTop + row * L.cellH;
       if(ex >= cellX && ex <= cellX+L.cellW && ey >= cellY && ey <= cellY+L.cellH) {
         if(isUnlocked(i)) state.selectedChar = i;
-        return; // tapping a cell just selects
+        return;
       }
     }
-    // Tap on footer (TAP TO PLAY area) starts game
+    // Tap footer → go to world select
     var footerY = L.gridTop + L.gridH + L.pad*0.5;
     if(ey >= footerY) {
+      state.screen = 'worldselect';
+    }
+
+  } else if(state.screen === 'worldselect') {
+    var W2 = canvas.width, H2 = canvas.height;
+    var L2 = getWorldSelectLayout(W2, H2);
+    for(var j=0; j<WORLDS.length; j++){
+      var wCol = j % WS_COLS, wRow = Math.floor(j / WS_COLS);
+      var wCellX = L2.pad + wCol * L2.cellW;
+      var wCellY = L2.gridTop + wRow * L2.cellH;
+      if(ex >= wCellX && ex <= wCellX+L2.cellW && ey >= wCellY && ey <= wCellY+L2.cellH) {
+        if(isWorldUnlocked(j)) state.selectedWorld = j;
+        return;
+      }
+    }
+    // Tap footer → start game
+    var wFooterY = L2.gridTop + L2.gridH + L2.pad*0.5;
+    if(ey >= wFooterY) {
       state.screen = 'game';
       scoreDisplay.style.display = 'block';
       initGame();
@@ -1580,14 +1973,12 @@ function handleTap(ex, ey) {
     }
 
   } else if(state.screen === 'gameover') {
-    var W2 = canvas.width, H2 = canvas.height;
-    var btnW2 = W2 * 0.64;
-    var btnX2 = W2/2 - btnW2/2;
-    var btnH2 = H2 * 0.072;
-    if(ex >= btnX2 && ex <= btnX2+btnW2 && ey >= H2*0.69 && ey <= H2*0.69+btnH2) {
+    var W3 = canvas.width, H3 = canvas.height;
+    var btnW3 = W3 * 0.64, btnX3 = W3/2 - W3*0.32, btnH3 = H3 * 0.072;
+    if(ex >= btnX3 && ex <= btnX3+btnW3 && ey >= H3*0.69 && ey <= H3*0.69+btnH3) {
       state.screen = 'game';
       initGame();
-    } else if(ex >= btnX2 && ex <= btnX2+btnW2 && ey >= H2*0.79 && ey <= H2*0.79+btnH2) {
+    } else if(ex >= btnX3 && ex <= btnX3+btnW3 && ey >= H3*0.79 && ey <= H3*0.79+btnH3) {
       state.screen = 'charselect';
       scoreDisplay.style.display = 'none';
       stopBGM();
@@ -1612,7 +2003,8 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
     if(state.screen === 'game' && player.alive && state.countdown === 0) { player.vy = -FLAP_FORCE; playFlap(); }
     else if(state.screen === 'title') { state.screen='charselect'; }
-    else if(state.screen === 'charselect') { state.screen='game'; scoreDisplay.style.display='block'; initGame(); }
+    else if(state.screen === 'charselect') { state.screen='worldselect'; }
+    else if(state.screen === 'worldselect') { state.screen='game'; scoreDisplay.style.display='block'; initGame(); }
   }
 });
 
@@ -1667,6 +2059,10 @@ function loop(timestamp) {
       scrollX += 1.5;
       drawCharSelect();
 
+    } else if(state.screen === 'worldselect') {
+      scrollX += 1.5;
+      drawWorldSelect();
+
     } else if(state.screen === 'game') {
       if(player.alive) {
 
@@ -1713,6 +2109,7 @@ function loop(timestamp) {
             spawnDeathParticles();
             playDeath();
             stopBGM();
+            incrementGamesPlayed();
             state.lastScore = state.score;
             state.newUnlock = -1;
             saveHighScore(state.score);
