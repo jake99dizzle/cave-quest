@@ -793,6 +793,8 @@ function initGame() {
   gameTime = 0;
   state.score = 0;
   state.newUnlock = -1;
+  state.countdown = 3;       // counts 3, 2, 1 then GO
+  state.countdownTimer = 0;  // frames elapsed in current count step
   GRAVITY = 0.38;
   FLAP_FORCE = 7.5;
   if(soundOn) startBGM();
@@ -1572,7 +1574,7 @@ function handleTap(ex, ey) {
     }
 
   } else if(state.screen === 'game') {
-    if(player.alive) {
+    if(player.alive && state.countdown === 0) {
       player.vy = -FLAP_FORCE;
       playFlap();
     }
@@ -1608,11 +1610,47 @@ canvas.addEventListener('mousedown', function(e) {
 document.addEventListener('keydown', function(e) {
   if(e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
-    if(state.screen === 'game' && player.alive) { player.vy = -FLAP_FORCE; playFlap(); }
+    if(state.screen === 'game' && player.alive && state.countdown === 0) { player.vy = -FLAP_FORCE; playFlap(); }
     else if(state.screen === 'title') { state.screen='charselect'; }
     else if(state.screen === 'charselect') { state.screen='game'; scoreDisplay.style.display='block'; initGame(); }
   }
 });
+
+// ---- COUNTDOWN OVERLAY ----
+function drawCountdown() {
+  var W = canvas.width, H = canvas.height;
+  var label = state.countdown > 0 ? '' + state.countdown : 'GO!';
+  var color = state.countdown > 0 ? '#ffffff' : '#00ff88';
+
+  // Pulse scale: grows from 1.4 down to 1.0 over the duration of each step
+  var dur = 50;
+  var progress = state.countdownTimer / dur; // 0→1
+  var scale = 1.0 + (1 - progress) * 0.5;   // 1.5→1.0
+
+  var fontSize = Math.floor(H * 0.18);
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = 'bold ' + fontSize + 'px "Press Start 2P"';
+  ctx.globalAlpha = Math.min(1, 0.4 + (1 - progress) * 0.6);
+  ctx.translate(W/2, H/2);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20;
+  ctx.fillText(label, 0, fontSize * 0.35);
+  ctx.restore();
+
+  // Play a tick sound on each new number
+  if(state.countdownTimer === 0) {
+    if(state.countdown > 0) {
+      playTone(state.countdown === 1 ? 660 : 440, 'sine', 0.08, 0.15);
+    } else {
+      // GO! — upward two-tone fanfare
+      playTone(523, 'sine', 0.06, 0.15);
+      setTimeout(function(){ playTone(784, 'sine', 0.12, 0.15); }, 60);
+    }
+  }
+}
 
 // ---- Main loop ----
 var lastTime = 0;
@@ -1631,51 +1669,70 @@ function loop(timestamp) {
 
     } else if(state.screen === 'game') {
       if(player.alive) {
-        gameTime++;
-        // Speed ramps from 0.0028 → 0.0060 over ~2500 frames, then plateaus
-        gameSpeed = canvas.width * (0.0028 + Math.min(gameTime * 0.0000013, 0.0032));
 
-        player.vy += GRAVITY;
-        player.y += player.vy;
+        // ---- Countdown phase ----
+        if(state.countdown > 0) {
+          state.countdownTimer++;
+          // Each count lasts 50 frames (~0.83s at 60fps), GO shows for 30 frames
+          var countDur = state.countdown > 0 ? 50 : 30;
+          if(state.countdownTimer >= countDur) {
+            state.countdownTimer = 0;
+            state.countdown--;
+          }
+          // During countdown: animate character, scroll bg, but no physics/spawning
+          player.frameTimer++;
+          if(player.frameTimer > 8) { player.frame = (player.frame+1)%2; player.frameTimer=0; }
+          scrollX += canvas.width * 0.0028;
+          drawGame();
+          drawCountdown();
 
-        // Animate character
-        player.frameTimer++;
-        if(player.frameTimer > 8) { player.frame = (player.frame+1)%2; player.frameTimer=0; }
+        } else {
+          // ---- Normal gameplay ----
+          gameTime++;
+          gameSpeed = canvas.width * (0.0028 + Math.min(gameTime * 0.0000013, 0.0032));
 
-        scrollX += gameSpeed;
-        spawnTimer += gameSpeed;
-        // Spawn interval: starts at 0.55 screen widths, tightens to 0.42 at score 50+
-        var dynInterval = canvas.width * Math.max(0.42, 0.55 - state.score * 0.0026);
-        if(spawnTimer >= dynInterval) {
-          spawnObstacle();
-          spawnTimer = 0;
+          player.vy += GRAVITY;
+          player.y += player.vy;
+
+          player.frameTimer++;
+          if(player.frameTimer > 8) { player.frame = (player.frame+1)%2; player.frameTimer=0; }
+
+          scrollX += gameSpeed;
+          spawnTimer += gameSpeed;
+          var dynInterval = canvas.width * Math.max(0.42, 0.55 - state.score * 0.0026);
+          if(spawnTimer >= dynInterval) {
+            spawnObstacle();
+            spawnTimer = 0;
+          }
+
+          updateObstacles(dt);
+
+          if(checkCollision()) {
+            player.alive = false;
+            player.deathTimer = 0;
+            spawnDeathParticles();
+            playDeath();
+            stopBGM();
+            state.lastScore = state.score;
+            state.newUnlock = -1;
+            saveHighScore(state.score);
+            state.highScore = getHighScore();
+          }
+          drawGame();
+          updateParticles();
         }
 
-        updateObstacles(dt);
-
-        if(checkCollision()) {
-          player.alive = false;
-          player.deathTimer = 0;
-          spawnDeathParticles();
-          playDeath();
-          stopBGM();
-          state.lastScore = state.score;
-          state.newUnlock = -1;
-          saveHighScore(state.score);
-          state.highScore = getHighScore();
-        }
       } else {
+        // Death animation
         player.deathTimer++;
         player.rotation += 0.15;
         player.y += 3;
         updateParticles();
         scoreDisplay.style.display = 'none';
-        if(player.deathTimer > 80) {
-          state.screen = 'gameover';
-        }
+        if(player.deathTimer > 80) state.screen = 'gameover';
+        drawGame();
+        updateParticles();
       }
-      drawGame();
-      updateParticles();
 
     } else if(state.screen === 'gameover') {
       updateParticles();
