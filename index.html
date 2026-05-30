@@ -104,7 +104,10 @@ function resize() {
   canvas.height = window.innerHeight;
 }
 resize();
-window.addEventListener('resize', function() { resize(); if (state.screen === 'title') drawTitle(); });
+window.addEventListener('resize', function() {
+  resize();
+  if(typeof state !== 'undefined' && state.screen === 'title') drawTitle();
+});
 
 // ---- Audio ----
 var audioCtx = null;
@@ -139,55 +142,59 @@ function playDeath() {
   setTimeout(function(){ playTone(100, 'sawtooth', 0.2, 0.2); }, 200);
 }
 
-// Chiptune BGM — catchy A-minor fantasy tune, 128 notes, ~25 seconds before loop
+// ============================================================
+// CAVE QUEST BGM — Single voice melody, no overlap, hummable
+// Key: A minor pentatonic. One note at a time, always.
+// Step = 125ms. Each note plays for 85ms. Gap = 40ms silence.
+// 128 steps = ~16 seconds before loop. AABA structure.
+// ============================================================
 var bgmPlaying = false;
 var bgmInterval = null;
 var bgmIdx = 0;
+var BGM_STEP = 125;   // ms per step (fixed)
+var BGM_NOTE = 0.075; // note duration in seconds (< step time = no overlap)
 
-// Frequencies used: A3=220 B3=247 C4=262 D4=294 E4=330 F4=349 G4=392
-//                   A4=440 B4=494 C5=523 D5=587 E5=659 G5=784
-// Melody: 4 distinct 32-note phrases (AABA structure — verse, verse, bridge, verse)
-var bgmMelody = [
-  // Phrase A — main cave theme (bouncy, memorable)
-  330,330,392,440, 392,330,294,330, 262,262,294,330, 294,262,247,262,
-  330,294,330,392, 440,494,440,392, 330,392,330,294, 262,0,262,0,
-  // Phrase A repeat with variation
-  330,330,392,440, 392,330,294,330, 262,294,330,349, 330,294,262,0,
-  392,440,494,523, 494,440,392,330, 294,330,392,440, 392,0,330,0,
-  // Phrase B — darker bridge
-  220,247,262,294, 262,247,220,0,   247,262,294,330, 311,294,262,247,
-  262,294,330,392, 349,330,294,262, 247,220,247,262, 294,330,0,0,
-  // Phrase A finale — builds to end
-  330,392,440,494, 523,494,440,392, 330,294,330,392, 440,494,523,0,
-  494,440,392,330, 294,262,294,330, 392,440,494,440, 392,330,0,0
-];
+// Frequencies: 0 = rest
+// A3=220 C4=262 D4=294 E4=330 G4=392 A4=440 C5=523 D5=587 E5=659 G5=784 A5=880
+// Tune: original Cave Quest theme — bouncy, hummable, adventure feel
+// Phrase A (main hook) × 2, Phrase B (bridge), Phrase A return
+var bgmNotes = [
+  // ---- Phrase A — main hook (×2 with slight variation) ----
+  // "da-da DUM da, da-da DUM rest" feel
+  440,523,587,523,  440,392,440,0,
+  523,587,659,587,  523,440,523,0,
+  440,523,587,523,  440,392,330,0,
+  392,440,523,440,  392,0,0,0,
 
-// Bass line — root notes of each chord, triangle wave
-var bgmBass = [
-  // Phrase A bass — Am / F / C / G
-  110,0,110,0,   175,0,175,0,   131,0,131,0,   196,0,196,0,
-  110,0,110,0,   175,0,175,0,   131,0,196,0,   110,0,0,0,
-  // Phrase A repeat bass
-  110,0,110,0,   175,0,175,0,   131,0,131,0,   165,0,165,0,
-  196,0,196,0,   220,0,220,0,   175,0,175,0,   196,0,0,0,
-  // Phrase B bass — Dm / Am / F / G
-  147,0,147,0,   110,0,110,0,   175,0,175,0,   196,0,196,0,
-  131,0,131,0,   175,0,175,0,   110,0,110,0,   147,0,0,0,
-  // Finale bass — builds
-  110,0,110,0,   175,0,175,0,   196,0,196,0,   220,0,220,0,
-  247,0,247,0,   196,0,196,0,   175,0,175,0,   110,0,0,0
-];
+  // Phrase A (repeat, rises higher at end)
+  440,523,587,523,  440,392,440,0,
+  523,587,659,587,  523,440,523,0,
+  587,659,784,659,  587,523,440,0,
+  523,440,392,440,  523,0,0,0,
 
-// Durations — 120ms base with 80ms rests, some 160ms long notes for feel
-var bgmDurations = [
-  120,40,120,160, 120,120,80,120, 120,40,120,160, 120,120,80,120,
-  120,120,120,120, 160,120,120,120, 120,120,120,120, 200,80,200,80,
-  120,40,120,160, 120,120,80,120, 120,120,120,160, 200,120,80,80,
-  120,120,160,160, 160,120,120,120, 120,120,120,120, 240,80,240,80,
-  160,120,120,120, 120,120,160,80, 120,120,120,120, 160,120,120,120,
-  120,120,120,120, 120,120,120,120, 120,120,120,120, 200,120,80,80,
-  120,120,120,160, 160,120,120,120, 120,120,120,120, 160,120,160,80,
-  160,120,120,120, 120,120,120,120, 120,120,160,120, 240,120,80,80
+  // ---- Phrase B — bridge (darker, lower, contrast) ----
+  294,330,392,330,  294,262,294,0,
+  330,392,440,392,  330,294,330,0,
+  262,294,330,294,  262,220,262,0,
+  294,330,392,330,  294,0,0,0,
+
+  // Bridge high part
+  392,440,523,440,  392,330,392,0,
+  440,523,587,523,  440,392,440,0,
+  330,392,440,523,  440,392,330,0,
+  392,330,294,330,  294,0,0,0,
+
+  // ---- Phrase A finale — returns home, builds ----
+  440,523,587,523,  440,392,440,0,
+  523,587,659,587,  523,440,523,0,
+  440,523,587,659,  784,659,587,0,
+  523,587,659,587,  523,0,0,0,
+
+  // Final phrase — triumphant ending back to root
+  659,784,880,784,  659,587,523,0,
+  587,659,784,659,  587,523,440,0,
+  523,587,659,587,  523,440,392,0,
+  440,523,440,392,  440,0,0,0
 ];
 
 function startBGM() {
@@ -197,14 +204,11 @@ function startBGM() {
 }
 function scheduleBGM() {
   if(!soundOn || !bgmPlaying) return;
-  var i = bgmIdx % bgmMelody.length;
-  var mel = bgmMelody[i];
-  var bas = bgmBass[i];
-  var dur = bgmDurations[i];
-  if(mel > 0) playTone(mel, 'square', dur * 0.00075, 0.07);
-  if(bas > 0) playTone(bas, 'triangle', dur * 0.00090, 0.045);
+  var note = bgmNotes[bgmIdx % bgmNotes.length];
+  // Single voice only — no simultaneous tones ever
+  if(note > 0) playTone(note, 'square', BGM_NOTE, 0.08);
   bgmIdx++;
-  bgmInterval = setTimeout(scheduleBGM, dur);
+  bgmInterval = setTimeout(scheduleBGM, BGM_STEP);
 }
 function stopBGM() {
   bgmPlaying = false;
@@ -2128,7 +2132,6 @@ function loop(timestamp) {
         scoreDisplay.style.display = 'none';
         if(player.deathTimer > 80) state.screen = 'gameover';
         drawGame();
-        updateParticles();
       }
 
     } else if(state.screen === 'gameover') {
