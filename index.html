@@ -920,9 +920,10 @@ function getActiveObstacleTypes() {
   if(score >= 5)  types.push('slime');
   if(score >= 10) types.push('spider');
   if(score >= 25) types.push('imp');
-  if(score >= 35) types.push('spikedwall');
-  if(score >= 50) types.push('skeleton');
-  if(score >= 75) types.push('zombie');
+  if(score >= 40) types.push('spikedwall');
+  if(score >= 60) types.push('skeleton');
+  if(score >= 80) types.push('zombie');
+  if(score >= 100) types.push('gargoyle');
   return types;
 }
 
@@ -968,6 +969,17 @@ function spawnObstacle() {
   } else if(type === 'zombie') {
     var zombY = safeTop + playH * (0.2 + Math.random() * 0.6);
     obstacles.push({ type:'zombie', x: W+30, y: zombY, w:36, h:44, animT:0, scored:false });
+  } else if(type === 'gargoyle') {
+    var onTop = Math.random() < 0.5;
+    var gargStartY = onTop ? canvas.height * 0.22 : canvas.height * 0.72;
+    obstacles.push({
+      type:'gargoyle', x: canvas.width+40, y: gargStartY, w:36, h:36,
+      animT:0, scored:false,
+      onTop: onTop,
+      state:'perched',
+      swoopStartX: 0, swoopStartY: gargStartY,
+      alertTimer: 0
+    });
   }
 }
 
@@ -1026,6 +1038,30 @@ function updateObstacles(dt) {
       o.animT += 0.07;
       if(!o.scored && o.x < player.x) { o.scored=true; state.score++; playScore(); }
       if(o.x < -50) obstacles.splice(i,1);
+
+    } else if(o.type === 'gargoyle') {
+      o.animT += 0.05;
+      o.x -= gameSpeed * 0.7;
+
+      if(o.state === 'perched') {
+        // Begin swooping when it enters the screen
+        if(o.x < canvas.width * 0.85) {
+          o.state = 'swooping';
+          o.swoopStartX = o.x;
+          o.swoopStartY = o.y;
+        }
+      } else if(o.state === 'swooping') {
+        // Big slow sine arc — amplitude 35% of play height, very readable
+        var playH2 = canvas.height * 0.70;
+        var swoopAmp = playH2 * 0.32;
+        var swoopFreq = 0.012; // low frequency = wide arc
+        o.y = o.swoopStartY + Math.sin((o.swoopStartX - o.x) * swoopFreq) * swoopAmp;
+        // Clamp to play area
+        o.y = Math.max(canvas.height * 0.15, Math.min(canvas.height * 0.80, o.y));
+      }
+
+      if(!o.scored && o.x < player.x) { o.scored=true; state.score++; playScore(); }
+      if(o.x < -60) obstacles.splice(i,1);
     }
   }
 }
@@ -1217,6 +1253,66 @@ function drawObstacle(o, H) {
       ctx.restore();
     }
 
+  } else if(o.type === 'gargoyle') {
+    var gfr = Math.floor(o.animT * 6) % 2;
+    var diving = o.state === 'diving';
+    var alert = o.alertTimer > 0 && o.state === 'perched';
+    var gx = o.x, gy = o.y;
+    ctx.save();
+    // Warning glow when about to dive
+    if(alert) {
+      ctx.save();
+      ctx.globalAlpha = 0.3 + Math.sin(o.animT * 8) * 0.3;
+      ctx.fillStyle = '#ff2200';
+      ctx.shadowColor = '#ff2200'; ctx.shadowBlur = 20;
+      ctx.beginPath(); ctx.arc(gx+18, gy+14, 22, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    // Wings
+    ctx.fillStyle = '#2a2030';
+    if(diving || gfr) {
+      ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-20,gy-2); ctx.lineTo(gx-10,gy+18); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+56,gy-2); ctx.lineTo(gx+46,gy+18); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3a2845';
+      ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-16,gy+4); ctx.lineTo(gx-8,gy+20); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+52,gy+4); ctx.lineTo(gx+44,gy+20); ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.moveTo(gx+6,gy+8); ctx.lineTo(gx-4,gy+2); ctx.lineTo(gx+2,gy+22); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx+30,gy+8); ctx.lineTo(gx+40,gy+2); ctx.lineTo(gx+34,gy+22); ctx.closePath(); ctx.fill();
+    }
+    // Body
+    ctx.fillStyle = '#5a5060';
+    ctx.fillRect(gx+6, gy+10, 24, 20);
+    ctx.fillStyle = '#7a7080';
+    ctx.fillRect(gx+8, gy+12, 8, 4);
+    ctx.fillRect(gx+20, gy+18, 6, 3);
+    // Head
+    ctx.fillStyle = '#5a5060';
+    ctx.beginPath(); ctx.ellipse(gx+18, gy+8, 10, 9, 0, 0, Math.PI*2); ctx.fill();
+    // Horns
+    ctx.fillStyle = '#3a2840';
+    ctx.beginPath(); ctx.moveTo(gx+10,gy+2); ctx.lineTo(gx+8,gy-8); ctx.lineTo(gx+14,gy+1); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(gx+26,gy+2); ctx.lineTo(gx+28,gy-8); ctx.lineTo(gx+22,gy+1); ctx.closePath(); ctx.fill();
+    // Eyes
+    var eyeColor = (alert || diving) ? '#ff2200' : '#cc4400';
+    ctx.save();
+    if(alert || diving) { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 8; }
+    ctx.fillStyle = eyeColor;
+    ctx.beginPath(); ctx.ellipse(gx+13, gy+7, 3, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(gx+23, gy+7, 3, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.ellipse(gx+13, gy+8, 1.5, 1.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(gx+23, gy+8, 1.5, 1.5, 0, 0, Math.PI*2); ctx.fill();
+    // Claws
+    ctx.fillStyle = '#3a2840';
+    ctx.fillRect(gx+8,gy+28,4,6); ctx.fillRect(gx+14,gy+29,4,5);
+    ctx.fillRect(gx+22,gy+29,4,5); ctx.fillRect(gx+28,gy+28,4,6);
+    // Tail
+    ctx.fillStyle = '#4a4055';
+    ctx.beginPath(); ctx.moveTo(gx+18,gy+28); ctx.quadraticCurveTo(gx+36,gy+38,gx+30,gy+44); ctx.lineTo(gx+26,gy+40); ctx.quadraticCurveTo(gx+32,gy+36,gx+16,gy+30); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
   } else if(o.type === 'zombie') {
     var zfr = Math.floor(o.animT * 4) % 2;
     // Legs (shamble)
@@ -1279,6 +1375,8 @@ function checkCollision() {
       if(o.boneX > 0 && rectCircle(o.boneX-8, (o.boneY||o.y+12), 16, 6, px2, py, pr)) return true;
     } else if(o.type === 'zombie') {
       if(rectCircle(o.x - 8, o.y+8, 52, 36, px2, py, pr)) return true;
+    } else if(o.type === 'gargoyle') {
+      if(rectCircle(o.x, o.y, o.w, o.h, px2, py, pr)) return true;
     }
   }
   return false;
