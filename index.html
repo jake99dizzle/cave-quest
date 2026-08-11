@@ -6,6 +6,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Cave Quest</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0015">
+<link rel="icon" href="favicon-cave-quest.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Cave Quest">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -214,7 +221,6 @@ function stopBGM() {
   bgmPlaying = false;
   if(bgmInterval) clearTimeout(bgmInterval);
 }
-function setBGMTempo(t) { /* fixed tempo */ }
 
 soundBtn.addEventListener('click', function() {
   initAudio();
@@ -953,8 +959,6 @@ function spawnObstacle() {
     var sx = W + 20 + Math.random()*W*0.2;
     var maxWebLen = playH * (0.25 + Math.min(state.score * 0.003, 0.2));
     obstacles.push({ type:'spider', x:sx, y:safeTop, webLen: maxWebLen * (0.5 + Math.random()*0.5), w:22, animT:0, scored:false, vel:0.6+Math.random()*0.5, dir:1 });
-  } else if(type === 'boulder') {
-    obstacles.push({ type:'boulder', x: W*0.4+Math.random()*W*0.4, y: safeTop-30, r:18+Math.random()*14, vy:1.5+Math.random()*2, scored:false });
   } else if(type === 'imp') {
     var iy = safeTop + Math.random()*playH*0.6;
     var waveAmp = playH * Math.min(0.06 + state.score * 0.0012, 0.18);
@@ -977,8 +981,7 @@ function spawnObstacle() {
       animT:0, scored:false,
       onTop: onTop,
       state:'perched',
-      swoopStartX: 0, swoopStartY: gargStartY,
-      alertTimer: 0
+      swoopStartX: 0, swoopStartY: gargStartY
     });
   }
 }
@@ -1175,20 +1178,6 @@ function drawObstacle(o, H) {
     ctx.fillRect(o.x+2, o.y-8, 4, 4);
     ctx.restore();
 
-  } else if(o.type === 'boulder') {
-    ctx.save();
-    ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 10;
-    ctx.fillStyle = '#c87840';
-    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = '#e8a060';
-    ctx.beginPath(); ctx.arc(o.x - o.r*0.3, o.y - o.r*0.3, o.r*0.35, 0, Math.PI*2); ctx.fill();
-    // Crack lines
-    ctx.strokeStyle = '#7a4020'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(o.x-4, o.y-o.r*0.5); ctx.lineTo(o.x+2, o.y+o.r*0.3); ctx.stroke();
-    ctx.strokeStyle = '#ff9944'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.stroke();
-
   } else if(o.type === 'imp') {
     var ifr = Math.floor(o.animT * 8) % 2;
     // Body
@@ -1255,27 +1244,23 @@ function drawObstacle(o, H) {
 
   } else if(o.type === 'gargoyle') {
     var gfr = Math.floor(o.animT * 6) % 2;
-    var diving = o.state === 'diving';
-    var alert = o.alertTimer > 0 && o.state === 'perched';
+    var swooping = o.state === 'swooping';
     var gx = o.x, gy = o.y;
     ctx.save();
-    // Warning glow when about to dive
-    if(alert) {
-      ctx.save();
-      ctx.globalAlpha = 0.3 + Math.sin(o.animT * 8) * 0.3;
-      ctx.fillStyle = '#ff2200';
-      ctx.shadowColor = '#ff2200'; ctx.shadowBlur = 20;
-      ctx.beginPath(); ctx.arc(gx+18, gy+14, 22, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-    }
-    // Wings
+    // Wings — spread and flap while swooping
     ctx.fillStyle = '#2a2030';
-    if(diving || gfr) {
+    if(swooping && gfr) {
       ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-20,gy-2); ctx.lineTo(gx-10,gy+18); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+56,gy-2); ctx.lineTo(gx+46,gy+18); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#3a2845';
       ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-16,gy+4); ctx.lineTo(gx-8,gy+20); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+52,gy+4); ctx.lineTo(gx+44,gy+20); ctx.closePath(); ctx.fill();
+    } else if(swooping) {
+      ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-16,gy+8); ctx.lineTo(gx-8,gy+22); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+52,gy+8); ctx.lineTo(gx+44,gy+22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3a2845';
+      ctx.beginPath(); ctx.moveTo(gx+6,gy+10); ctx.lineTo(gx-12,gy+10); ctx.lineTo(gx-6,gy+22); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx+30,gy+10); ctx.lineTo(gx+48,gy+10); ctx.lineTo(gx+42,gy+22); ctx.closePath(); ctx.fill();
     } else {
       ctx.beginPath(); ctx.moveTo(gx+6,gy+8); ctx.lineTo(gx-4,gy+2); ctx.lineTo(gx+2,gy+22); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(gx+30,gy+8); ctx.lineTo(gx+40,gy+2); ctx.lineTo(gx+34,gy+22); ctx.closePath(); ctx.fill();
@@ -1293,11 +1278,10 @@ function drawObstacle(o, H) {
     ctx.fillStyle = '#3a2840';
     ctx.beginPath(); ctx.moveTo(gx+10,gy+2); ctx.lineTo(gx+8,gy-8); ctx.lineTo(gx+14,gy+1); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(gx+26,gy+2); ctx.lineTo(gx+28,gy-8); ctx.lineTo(gx+22,gy+1); ctx.closePath(); ctx.fill();
-    // Eyes
-    var eyeColor = (alert || diving) ? '#ff2200' : '#cc4400';
+    // Eyes — always glowing orange-red so it reads as dangerous
     ctx.save();
-    if(alert || diving) { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 8; }
-    ctx.fillStyle = eyeColor;
+    ctx.shadowColor = '#ff3300'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#ff3300';
     ctx.beginPath(); ctx.ellipse(gx+13, gy+7, 3, 3, 0, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(gx+23, gy+7, 3, 3, 0, 0, Math.PI*2); ctx.fill();
     ctx.restore();
@@ -1376,7 +1360,8 @@ function checkCollision() {
     } else if(o.type === 'zombie') {
       if(rectCircle(o.x - 8, o.y+8, 52, 36, px2, py, pr)) return true;
     } else if(o.type === 'gargoyle') {
-      if(rectCircle(o.x, o.y, o.w, o.h, px2, py, pr)) return true;
+      // Hitbox covers body + head only (wings are forgiving)
+      if(rectCircle(o.x + 6, o.y + 2, 26, 30, px2, py, pr)) return true;
     }
   }
   return false;
@@ -2246,6 +2231,14 @@ function loop(timestamp) {
 // ---- Boot ----
 scoreDisplay.style.display = 'none';
 requestAnimationFrame(loop);
+</script>
+<script>
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+})();
 </script>
 </body>
 </html>
