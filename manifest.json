@@ -1,0 +1,15 @@
+{
+  "name": "Cave Quest",
+  "short_name": "Cave Quest",
+  "description": "Endless pixel art cave runner with fantasy characters, living obstacles, and chiptune music",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0015",
+  "theme_color": "#0a0015",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
